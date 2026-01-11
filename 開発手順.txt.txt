@@ -1,0 +1,9 @@
+specify init prject-name
+
+/speckit.constitution ./constitution.md
+
+/speckit.specify ./オンラインチケット販売システム要件定義.md ./単語集_オンラインチケット販売.md
+
+/speckit.plan
+/speckit.tasks
+/speckit.implement

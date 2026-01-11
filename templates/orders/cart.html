@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}カート - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">カート</h2>
+    
+    {% if cart and cart_items %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">選択した座席</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>座席</th>
+                                <th>座席種別</th>
+                                <th class="text-end">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>{{ item.seat }}</td>
+                                <td><span class="badge bg-secondary">{{ item.seat.get_seat_type_display }}</span></td>
+                                <td class="text-end">
+                                    <form method="post" action="{% url 'orders:cart_remove' item.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">合計</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>座席数:</strong> {{ cart.item_count }}席
+                    </p>
+                    
+                    <a href="{% url 'orders:checkout' %}" class="btn btn-primary w-100 btn-lg">購入手続きへ進む</a>
+                    <a href="{% url 'events:public_event_list' %}" class="btn btn-outline-secondary w-100 mt-2">イベント一覧へ戻る</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>カートに商品がありません。</p>
+        <a href="{% url 'events:public_event_list' %}" class="btn btn-primary">イベントを探す</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

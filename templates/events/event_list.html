@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}イベント一覧 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>イベント管理</h2>
+    <a href="{% url 'events:event_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> 新規イベント登録
+    </a>
+</div>
+
+{% if events %}
+<div class="row">
+    {% for event in events %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            {% if event.image %}
+            <img src="{{ event.image.url }}" class="card-img-top" alt="{{ event.name }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-secondary" style="height: 200px;"></div>
+            {% endif %}
+            
+            <div class="card-body">
+                <h5 class="card-title">{{ event.name }}</h5>
+                <p class="card-text text-muted small">
+                    <i class="bi bi-calendar"></i> {{ event.start_datetime|date:"Y/m/d H:i" }}<br>
+                    <i class="bi bi-geo-alt"></i> {{ event.venue.name }}
+                </p>
+                
+                <div class="mb-2">
+                    <span class="badge {% if event.is_public %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if event.is_public %}公開中{% else %}非公開{% endif %}
+                    </span>
+                    <span class="badge bg-info">{{ event.get_status_display }}</span>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="d-flex gap-2">
+                    <a href="{% url 'events:event_update' event.pk %}" class="btn btn-sm btn-outline-primary flex-fill">編集</a>
+                    <a href="{% url 'events:tickettype_create' event.pk %}" class="btn btn-sm btn-outline-success flex-fill">チケット種別</a>
+                    <a href="{% url 'events:event_delete' event.pk %}" class="btn btn-sm btn-outline-danger">削除</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ページネーション -->
+{% if is_paginated %}
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page=1">最初</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">前へ</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">次へ</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">最後</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <p>登録されているイベントはありません。</p>
+    <a href="{% url 'events:event_create' %}" class="btn btn-primary">イベントを登録する</a>
+</div>
+{% endif %}
+{% endblock %}

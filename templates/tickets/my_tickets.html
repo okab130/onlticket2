@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}マイチケット{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">マイチケット</h1>
+    
+    {% if tickets %}
+        <div class="row">
+            {% for ticket in tickets %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ ticket.order.event.name }}</h5>
+                        <p class="card-text">
+                            <strong>チケット番号:</strong> {{ ticket.ticket_number }}<br>
+                            <strong>開催日時:</strong> {{ ticket.order.event.start_datetime|date:"Y年m月d日 H:i" }}<br>
+                            <strong>会場:</strong> {{ ticket.order.event.venue.name }}<br>
+                            {% if ticket.seat %}
+                            <strong>座席:</strong> {{ ticket.seat.block }} {{ ticket.seat.row }}列 {{ ticket.seat.number }}番<br>
+                            {% else %}
+                            <strong>座席:</strong> 自由席<br>
+                            {% endif %}
+                            <strong>ステータス:</strong> 
+                            <span class="badge bg-success">{{ ticket.get_status_display }}</span>
+                        </p>
+                        <a href="{% url 'tickets:ticket_detail' ticket.ticket_number %}" class="btn btn-primary">
+                            チケット詳細・QRコード表示
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            チケットがありません。
+        </div>
+        <a href="{% url 'events:event_list' %}" class="btn btn-primary">イベントを探す</a>
+    {% endif %}
+</div>
+{% endblock %}

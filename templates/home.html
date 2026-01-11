@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}TicketPro - オンラインチケット販売システム{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12 text-center">
+        <h1 class="display-4">TicketPro</h1>
+        <p class="lead">オンラインチケット販売システム</p>
+        <hr class="my-4">
+        <p>イベントのチケット購入はこちらから</p>
+        <a class="btn btn-primary btn-lg" href="/events/" role="button">イベントを探す</a>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <h3>簡単購入</h3>
+        <p>座席をビジュアルで選択して、簡単にチケット購入できます。</p>
+    </div>
+    <div class="col-md-4">
+        <h3>電子チケット</h3>
+        <p>QRコード付き電子チケットで、スマートに入場できます。</p>
+    </div>
+    <div class="col-md-4">
+        <h3>安心・安全</h3>
+        <p>セキュアな決済システムで、安心してご利用いただけます。</p>
+    </div>
+</div>
+{% endblock %}

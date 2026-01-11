@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}購入確認 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">購入確認</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">注文内容</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>座席</th>
+                                <th>座席種別</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>{{ item.seat }}</td>
+                                <td><span class="badge bg-secondary">{{ item.seat.get_seat_type_display }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">購入者情報</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>お名前:</strong> {{ user.get_full_name|default:user.username }}<br>
+                        <strong>メールアドレス:</strong> {{ user.email }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">お支払い</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>座席数:</strong> {{ cart.item_count }}席
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <small>MVP版: 決済機能は簡略化されています</small>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">購入を確定する</button>
+                    </form>
+                    
+                    <a href="{% url 'orders:cart' %}" class="btn btn-outline-secondary w-100 mt-2">カートに戻る</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

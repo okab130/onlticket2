@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}イベント編集{% else %}イベント登録{% endif %} - TicketPro{% endblock %}
+
+{% block content %}
+<h2>{% if object %}イベント編集{% else %}イベント登録{% endif %}</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.name.label_tag }}
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div class="text-danger">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.category.label_tag }}
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                    <div class="text-danger">{{ form.category.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {% if form.description.errors %}
+                <div class="text-danger">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.venue.label_tag }}
+                    {{ form.venue }}
+                    {% if form.venue.errors %}
+                    <div class="text-danger">{{ form.venue.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.image.label_tag }}
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                    <div class="text-danger">{{ form.image.errors }}</div>
+                    {% endif %}
+                    {% if object.image %}
+                    <div class="mt-2">
+                        <img src="{{ object.image.url }}" alt="イベント画像" style="max-width: 200px;">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.start_datetime.label_tag }}
+                    {{ form.start_datetime }}
+                    {% if form.start_datetime.errors %}
+                    <div class="text-danger">{{ form.start_datetime.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.end_datetime.label_tag }}
+                    {{ form.end_datetime }}
+                    {% if form.end_datetime.errors %}
+                    <div class="text-danger">{{ form.end_datetime.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.status.label_tag }}
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                    <div class="text-danger">{{ form.status.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-check mt-4">
+                        {{ form.is_public }}
+                        {{ form.is_public.label_tag }}
+                    </div>
+                    {% if form.is_public.errors %}
+                    <div class="text-danger">{{ form.is_public.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{% if object %}更新{% else %}登録{% endif %}</button>
+                <a href="{% url 'events:event_list' %}" class="btn btn-secondary">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

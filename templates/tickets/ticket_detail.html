@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}チケット詳細 - {{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">電子チケット</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h3 class="mb-3">{{ ticket.order.event.name }}</h3>
+                    
+                    <div class="mb-4">
+                        {% if ticket.qr_code %}
+                        <img src="{{ ticket.qr_code.url }}" alt="QRコード" class="img-fluid" style="max-width: 300px;">
+                        {% else %}
+                        <div class="alert alert-warning">QRコードが生成されていません</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-start">
+                        <table class="table">
+                            <tr>
+                                <th>チケット番号</th>
+                                <td><strong>{{ ticket.ticket_number }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>イベント</th>
+                                <td>{{ ticket.order.event.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>開催日時</th>
+                                <td>{{ ticket.order.event.start_datetime|date:"Y年m月d日 H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>会場</th>
+                                <td>{{ ticket.order.event.venue.name }}<br>
+                                    <small class="text-muted">{{ ticket.order.event.venue.address }}</small>
+                                </td>
+                            </tr>
+                            {% if ticket.seat %}
+                            <tr>
+                                <th>座席</th>
+                                <td>{{ ticket.seat.block }} {{ ticket.seat.row }}列 {{ ticket.seat.number }}番<br>
+                                    <span class="badge bg-info">{{ ticket.seat.get_seat_type_display }}</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <th>座席</th>
+                                <td><span class="badge bg-secondary">自由席</span></td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>ステータス</th>
+                                <td>
+                                    {% if ticket.status == 'valid' %}
+                                    <span class="badge bg-success">{{ ticket.get_status_display }}</span>
+                                    {% elif ticket.status == 'used' %}
+                                    <span class="badge bg-secondary">{{ ticket.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{{ ticket.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'tickets:download_pdf' ticket.ticket_number %}" class="btn btn-secondary">
+                            <i class="bi bi-download"></i> PDFダウンロード
+                        </a>
+                        <a href="{% url 'tickets:my_tickets' %}" class="btn btn-primary">
+                            チケット一覧に戻る
+                        </a>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4 text-start">
+                        <strong>ご注意:</strong>
+                        <ul class="mb-0">
+                            <li>入場時にこのQRコードをスキャンします</li>
+                            <li>スクリーンショットでも入場可能です</li>
+                            <li>QRコードを他人に共有しないでください</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}座席選択 - {{ event.name }} - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4" x-data="seatSelection()">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'events:public_event_list' %}">イベント一覧</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:public_event_detail' event.pk %}">{{ event.name }}</a></li>
+            <li class="breadcrumb-item active">座席選択</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">座席を選択してください</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>{{ ticket_type.name }}</strong> - ¥{{ ticket_type.price|floatformat:0 }}<br>
+                        <small class="text-muted">最大5席まで選択できます</small>
+                    </p>
+                    
+                    <div class="seat-map" id="seatMap">
+                        <p class="text-center">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">選択中の座席</h5>
+                </div>
+                <div class="card-body">
+                    <template x-if="selectedSeats.length === 0">
+                        <p class="text-muted">座席を選択してください</p>
+                    </template>
+                    
+                    <ul class="list-group mb-3" x-show="selectedSeats.length > 0">
+                        <template x-for="seat in selectedSeats" :key="seat.id">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span x-text="seat.label"></span>
+                                <button @click="removeSeat(seat.id)" class="btn btn-sm btn-danger">削除</button>
+                            </li>
+                        </template>
+                    </ul>
+                    
+                    <div class="alert alert-info" x-show="selectedSeats.length > 0">
+                        <strong>合計金額:</strong> ¥<span x-text="totalAmount.toLocaleString()"></span>
+                    </div>
+                    
+                    <button 
+                        @click="addToCart" 
+                        class="btn btn-primary w-100" 
+                        :disabled="selectedSeats.length === 0"
+                        x-text="selectedSeats.length > 0 ? 'カートに追加 (' + selectedSeats.length + '席)' : 'カートに追加'">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function seatSelection() {
+    return {
+        seats: [],
+        selectedSeats: [],
+        maxSeats: 5,
+        
+        init() {
+            this.loadSeats();
+        },
+        
+        async loadSeats() {
+            try {
+                const response = await fetch(window.location.pathname, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json();
+                this.seats = data.seats;
+                this.renderSeats();
+            } catch (error) {
+                console.error('座席データの読み込みに失敗しました:', error);
+            }
+        },
+        
+        renderSeats() {
+            const seatMap = document.getElementById('seatMap');
+            seatMap.innerHTML = '';
+            
+            // ブロックごとにグループ化
+            const blocks = {};
+            this.seats.forEach(seat => {
+                if (!blocks[seat.block]) {
+                    blocks[seat.block] = [];
+                }
+                blocks[seat.block].push(seat);
+            });
+            
+            // 各ブロックを表示
+            for (const [blockName, blockSeats] of Object.entries(blocks)) {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'mb-4';
+                blockDiv.innerHTML = `<h6>ブロック ${blockName}</h6>`;
+                
+                const seatsContainer = document.createElement('div');
+                seatsContainer.className = 'd-flex flex-wrap gap-2';
+                
+                blockSeats.forEach(seat => {
+                    const seatBtn = document.createElement('button');
+                    seatBtn.className = 'btn btn-sm seat-btn';
+                    seatBtn.textContent = `${seat.row}-${seat.number}`;
+                    seatBtn.title = `${seat.label} - ${seat.seat_type_display}`;
+                    
+                    if (this.isSeatSelected(seat.id)) {
+                        seatBtn.classList.add('btn-success');
+                    } else if (seat.status === 'available') {
+                        seatBtn.classList.add('btn-outline-primary');
+                    } else {
+                        seatBtn.classList.add('btn-secondary');
+                        seatBtn.disabled = true;
+                    }
+                    
+                    seatBtn.onclick = () => this.toggleSeat(seat);
+                    seatsContainer.appendChild(seatBtn);
+                });
+                
+                blockDiv.appendChild(seatsContainer);
+                seatMap.appendChild(blockDiv);
+            }
+        },
+        
+        isSeatSelected(seatId) {
+            return this.selectedSeats.some(s => s.id === seatId);
+        },
+        
+        toggleSeat(seat) {
+            const index = this.selectedSeats.findIndex(s => s.id === seat.id);
+            
+            if (index >= 0) {
+                this.selectedSeats.splice(index, 1);
+            } else {
+                if (this.selectedSeats.length >= this.maxSeats) {
+                    alert(`最大${this.maxSeats}席まで選択できます`);
+                    return;
+                }
+                this.selectedSeats.push(seat);
+            }
+            
+            this.renderSeats();
+        },
+        
+        removeSeat(seatId) {
+            const index = this.selectedSeats.findIndex(s => s.id === seatId);
+            if (index >= 0) {
+                this.selectedSeats.splice(index, 1);
+                this.renderSeats();
+            }
+        },
+        
+        get totalAmount() {
+            return this.selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+        },
+        
+        async addToCart() {
+            if (this.selectedSeats.length === 0) return;
+            
+            const seatIds = this.selectedSeats.map(s => s.id);
+            
+            try {
+                const response = await fetch('{% url "orders:cart_add" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ seat_ids: seatIds })
+                });
+                
+                if (response.ok) {
+                    window.location.href = '{% url "orders:cart" %}';
+                } else {
+                    alert('カートへの追加に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+    };
+}
+</script>
+
+<style>
+.seat-btn {
+    min-width: 50px;
+}
+</style>
+{% endblock %}

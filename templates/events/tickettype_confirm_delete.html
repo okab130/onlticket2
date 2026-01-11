@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}チケット種別削除確認 - TicketPro{% endblock %}
+
+{% block content %}
+<h2>チケット種別削除確認</h2>
+
+<div class="card">
+    <div class="card-body">
+        <p class="alert alert-warning">
+            <strong>{{ object.name }}</strong> ({{ object.event.name }}) を削除してもよろしいですか？
+        </p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">削除する</button>
+                <a href="{% url 'events:event_list' %}" class="btn btn-secondary">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

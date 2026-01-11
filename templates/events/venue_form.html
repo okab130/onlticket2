@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}会場編集{% else %}会場登録{% endif %} - TicketPro{% endblock %}
+
+{% block content %}
+<h2>{% if object %}会場編集{% else %}会場登録{% endif %}</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div class="text-danger">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.address.label_tag }}
+                {{ form.address }}
+                {% if form.address.errors %}
+                <div class="text-danger">{{ form.address.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.capacity.label_tag }}
+                {{ form.capacity }}
+                {% if form.capacity.errors %}
+                <div class="text-danger">{{ form.capacity.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.seat_map_image.label_tag }}
+                {{ form.seat_map_image }}
+                {% if form.seat_map_image.errors %}
+                <div class="text-danger">{{ form.seat_map_image.errors }}</div>
+                {% endif %}
+                {% if object.seat_map_image %}
+                <div class="mt-2">
+                    <img src="{{ object.seat_map_image.url }}" alt="座席図" style="max-width: 300px;">
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{% if object %}更新{% else %}登録{% endif %}</button>
+                <a href="{% url 'events:venue_list' %}" class="btn btn-secondary">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
