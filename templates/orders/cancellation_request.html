@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}キャンセル申請 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'members:purchase_history' %}">購入履歴</a></li>
+            <li class="breadcrumb-item active">キャンセル申請</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> キャンセル申請</h4>
+                </div>
+                <div class="card-body">
+                    <h5>注文情報</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>注文番号</th>
+                            <td>{{ order.order_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>イベント名</th>
+                            <td>{{ order.event.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>購入日</th>
+                            <td>{{ order.created_at|date:"Y年m月d日 H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>合計金額</th>
+                            <td>¥{{ order.total_amount|floatformat:0 }}</td>
+                        </tr>
+                    </table>
+
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">キャンセル理由 <span class="text-danger">*</span></label>
+                            <textarea name="reason" id="reason" class="form-control" rows="4" required 
+                                placeholder="キャンセル理由を入力してください"></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <p class="mb-0"><i class="bi bi-info-circle"></i> キャンセル申請後、主催者の承認をお待ちください。承認されると返金処理が行われます。</p>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'members:purchase_history' %}" class="btn btn-secondary">戻る</a>
+                            <button type="submit" class="btn btn-warning">キャンセル申請</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

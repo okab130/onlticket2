@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}キャンセル申請一覧 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-clipboard-check"></i> キャンセル申請一覧</h2>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>申請日時</th>
+                    <th>注文番号</th>
+                    <th>イベント名</th>
+                    <th>購入者</th>
+                    <th>返金額</th>
+                    <th>ステータス</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cancellation in cancellations %}
+                <tr>
+                    <td>{{ cancellation.requested_at|date:"Y/m/d H:i" }}</td>
+                    <td>{{ cancellation.order.order_number }}</td>
+                    <td>{{ cancellation.order.event.name }}</td>
+                    <td>{{ cancellation.order.user.get_full_name }}</td>
+                    <td>¥{{ cancellation.refund_amount|floatformat:0 }}</td>
+                    <td>
+                        {% if cancellation.status == 'requested' %}
+                            <span class="badge bg-warning">申請中</span>
+                        {% elif cancellation.status == 'approved' %}
+                            <span class="badge bg-success">承認済み</span>
+                        {% elif cancellation.status == 'rejected' %}
+                            <span class="badge bg-danger">却下</span>
+                        {% elif cancellation.status == 'processed' %}
+                            <span class="badge bg-info">処理完了</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if cancellation.status == 'requested' %}
+                            <a href="{% url 'organizers:cancellation_approval' cancellation.pk %}" class="btn btn-sm btn-primary">確認</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">キャンセル申請はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}主催者ダッシュボード - TicketPro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2>主催者ダッシュボード</h2>
+    <p class="text-muted">{{ organizer.organization_name }}</p>
+</div>
+
+<!-- サマリーカード -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <div class="stat-value">¥{{ summary.total_sales|floatformat:0 }}</div>
+                <div class="stat-label">総売上</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ summary.total_tickets }}</div>
+                <div class="stat-label">販売枚数</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ summary.total_events }}</div>
+                <div class="stat-label">イベント数</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ summary.sold_out_events }}</div>
+                <div class="stat-label">完売イベント</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 販売推移グラフ -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">販売推移（直近30日）</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="salesTrendChart" height="80"></canvas>
+    </div>
+</div>
+
+<!-- クイックアクセス -->
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">イベント管理</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'events:event_list' %}" class="btn btn-primary w-100 mb-2">イベント一覧</a>
+                <a href="{% url 'events:event_create' %}" class="btn btn-success w-100">新規イベント作成</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">売上管理</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'organizers:sales_report' %}" class="btn btn-primary w-100 mb-2">売上レポート</a>
+                <a href="{% url 'organizers:sales_report_csv' %}" class="btn btn-success w-100">CSV出力</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // 販売推移グラフ
+    const ctx = document.getElementById('salesTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels|safe }},
+            datasets: [
+                {
+                    label: '売上 (¥)',
+                    data: {{ trend_sales|safe }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '販売枚数',
+                    data: {{ trend_tickets|safe }},
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: '売上 (¥)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: '販売枚数'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

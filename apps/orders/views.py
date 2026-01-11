@@ -7,8 +7,9 @@ from django.http import JsonResponse
 from django.db import transaction
 from django.contrib import messages
 import json
-from .models import Cart, CartItem, Order, Payment
+from .models import Cart, CartItem, Order, Payment, Cancellation
 from apps.seats.models import Seat
+from apps.events.models import TicketType
 
 
 class AddToCartView(LoginRequiredMixin, View):
@@ -142,3 +143,77 @@ class PurchaseCompleteView(LoginRequiredMixin, View):
         return render(request, 'orders/purchase_complete.html', {
             'order': order,
         })
+
+
+@login_required
+def add_to_cart_free_view(request):
+    """自由席チケットをカートに追加"""
+    if request.method == 'POST':
+        ticket_type_id = request.POST.get('ticket_type_id')
+        quantity = int(request.POST.get('quantity', 1))
+        
+        try:
+            ticket_type = get_object_or_404(TicketType, pk=ticket_type_id, type='free')
+            
+            # 在庫チェック
+            if ticket_type.remaining_quantity < quantity:
+                messages.error(request, '指定された枚数が在庫を超えています。')
+                return redirect('events:event_detail', pk=ticket_type.event.pk)
+            
+            with transaction.atomic():
+                # カート取得または作成
+                cart, created = Cart.objects.get_or_create(user=request.user)
+                
+                # 自由席チケットをカートに追加（seat=Nullで管理）
+                # 注: CartItemモデルにticket_typeとquantityフィールドが必要
+                # 簡易実装として、枚数分のCartItemを作成
+                for _ in range(quantity):
+                    CartItem.objects.create(
+                        cart=cart,
+                        seat=None,
+                        ticket_type=ticket_type
+                    )
+                
+                # 販売済枚数を増加（仮予約）
+                ticket_type.sold_quantity += quantity
+                ticket_type.save()
+            
+            messages.success(request, f'{ticket_type.name} を {quantity}枚カートに追加しました。')
+            return redirect('orders:cart')
+            
+        except Exception as e:
+            messages.error(request, f'カートへの追加に失敗しました: {str(e)}')
+            return redirect('events:event_detail', pk=ticket_type.event.pk)
+    
+    return redirect('events:public_event_list')
+
+
+@login_required
+def cancellation_request_view(request, order_id):
+    """キャンセル申請"""
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    
+    # すでにキャンセル申請済みの場合
+    if hasattr(order, 'cancellation'):
+        messages.warning(request, 'このチケットはすでにキャンセル申請済みです。')
+        return redirect('members:purchase_history')
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        
+        if not reason:
+            messages.error(request, 'キャンセル理由を入力してください。')
+            return render(request, 'orders/cancellation_request.html', {'order': order})
+        
+        # キャンセル申請作成
+        Cancellation.objects.create(
+            order=order,
+            reason=reason,
+            refund_amount=order.total_amount,
+            status='requested'
+        )
+        
+        messages.success(request, 'キャンセル申請を受け付けました。承認をお待ちください。')
+        return redirect('members:purchase_history')
+    
+    return render(request, 'orders/cancellation_request.html', {'order': order})

@@ -1,7 +1,7 @@
 import uuid
 from django.utils import timezone
 from django.db import transaction
-from .models import Order, Payment
+from .models import Order, Payment, Cancellation
 from apps.tickets.models import Ticket
 from apps.seats.models import Seat
 
@@ -85,3 +85,44 @@ def create_order(user, cart):
         cart.delete()
         
         return order
+
+
+def process_cancellation(cancellation, approved_by):
+    """
+    キャンセル処理
+    
+    Args:
+        cancellation: Cancellationオブジェクト
+        approved_by: 承認者（Userオブジェクト）
+    """
+    with transaction.atomic():
+        order = cancellation.order
+        
+        # 注文ステータスを更新
+        order.status = 'cancelled'
+        order.save()
+        
+        # チケットを無効化
+        tickets = Ticket.objects.filter(order=order)
+        for ticket in tickets:
+            ticket.status = 'cancelled'
+            ticket.save()
+            
+            # 座席を空席に戻す
+            if ticket.seat:
+                seat = ticket.seat
+                seat.status = 'available'
+                seat.reserved_by = None
+                seat.save()
+        
+        # 支払いステータスを更新
+        if hasattr(order, 'payment'):
+            payment = order.payment
+            payment.status = 'refunded'
+            payment.save()
+        
+        # キャンセルステータスを更新
+        cancellation.status = 'processed'
+        cancellation.processed_at = timezone.now()
+        cancellation.processed_by = approved_by
+        cancellation.save()

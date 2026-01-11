@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}QRコードスキャン - 入場管理{% endblock %}
+
+{% block extra_css %}
+<style>
+    #scanner-container {
+        position: relative;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    #reader {
+        border: 2px solid #007bff;
+        border-radius: 8px;
+    }
+    .result-box {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .result-success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    .result-error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+    .ticket-info {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">
+        <i class="bi bi-qr-code-scan"></i> QRコードスキャン - 入場管理
+    </h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">QRコードをスキャン</h5>
+                    
+                    <!-- ゲート選択 -->
+                    <div class="mb-3">
+                        <label for="gate-select" class="form-label">ゲート</label>
+                        <select class="form-select" id="gate-select">
+                            <option value="メインゲート">メインゲート</option>
+                            <option value="東ゲート">東ゲート</option>
+                            <option value="西ゲート">西ゲート</option>
+                            <option value="VIPゲート">VIPゲート</option>
+                        </select>
+                    </div>
+
+                    <!-- QRコードスキャナー -->
+                    <div id="scanner-container">
+                        <div id="reader"></div>
+                    </div>
+
+                    <!-- 手動入力フォーム -->
+                    <div class="mt-4">
+                        <h6>または手動でチケット番号を入力</h6>
+                        <form id="manual-entry-form">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="ticket-number-input" 
+                                       placeholder="チケット番号を入力" autocomplete="off">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-check-circle"></i> 検証
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 結果表示エリア -->
+                    <div id="result-container" class="mt-4" style="display: none;">
+                        <div id="result-message" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">入場状況</h5>
+                    <div class="text-center">
+                        <h2 class="text-primary"><span id="today-count">0</span>名</h2>
+                        <p class="text-muted">本日の入場者数</p>
+                    </div>
+                    <hr>
+                    <a href="{% url 'entries:entry_status' %}" class="btn btn-outline-primary w-100">
+                        詳細を見る
+                    </a>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">操作方法</h6>
+                    <ol class="small">
+                        <li>カメラでQRコードをスキャン</li>
+                        <li>自動で検証が開始されます</li>
+                        <li>✓マークで入場許可</li>
+                        <li>✗マークで入場拒否</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resultContainer = document.getElementById('result-container');
+    const resultMessage = document.getElementById('result-message');
+    const ticketNumberInput = document.getElementById('ticket-number-input');
+    const gateSelect = document.getElementById('gate-select');
+    
+    // QRコードスキャナー初期化
+    const html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    // スキャン成功時の処理
+    function onScanSuccess(decodedText, decodedResult) {
+        // スキャン一時停止
+        html5QrCode.pause(true);
+        
+        // チケット検証
+        verifyTicket(decodedText);
+        
+        // 2秒後にスキャン再開
+        setTimeout(() => {
+            html5QrCode.resume();
+        }, 2000);
+    }
+    
+    // カメラ起動
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+            const cameraId = cameras[cameras.length - 1].id;
+            html5QrCode.start(
+                cameraId,
+                config,
+                onScanSuccess
+            ).catch(err => {
+                console.error('カメラ起動エラー:', err);
+                alert('カメラの起動に失敗しました。手動入力をご利用ください。');
+            });
+        } else {
+            alert('カメラが見つかりません。手動入力をご利用ください。');
+        }
+    }).catch(err => {
+        console.error('カメラ取得エラー:', err);
+    });
+    
+    // チケット検証関数
+    function verifyTicket(ticketNumber) {
+        const gate = gateSelect.value;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch('{% url "entries:verify_ticket" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken
+            },
+            body: `ticket_number=${encodeURIComponent(ticketNumber)}&gate=${encodeURIComponent(gate)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            showResult(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showResult({
+                success: false,
+                message: 'エラーが発生しました'
+            });
+        });
+    }
+    
+    // 結果表示関数
+    function showResult(data) {
+        resultContainer.style.display = 'block';
+        resultMessage.className = data.success ? 'result-box result-success' : 'result-box result-error';
+        
+        let html = `<h5><i class="bi bi-${data.success ? 'check-circle-fill' : 'x-circle-fill'}"></i> ${data.message}</h5>`;
+        
+        if (data.ticket) {
+            html += `
+                <div class="ticket-info">
+                    <p class="mb-1"><strong>チケット番号:</strong> ${data.ticket.ticket_number}</p>
+                    <p class="mb-1"><strong>イベント:</strong> ${data.ticket.event_name}</p>
+                    <p class="mb-1"><strong>座席:</strong> ${data.ticket.seat_info}</p>
+                    <p class="mb-0"><strong>種別:</strong> ${data.ticket.ticket_type}</p>
+                </div>
+            `;
+        }
+        
+        if (data.entry) {
+            html += `
+                <div class="ticket-info mt-2">
+                    <p class="mb-1"><strong>入場時刻:</strong> ${data.entry.entered_at}</p>
+                    <p class="mb-0"><strong>ゲート:</strong> ${data.entry.gate}</p>
+                </div>
+            `;
+        }
+        
+        resultMessage.innerHTML = html;
+        
+        // 音声フィードバック（オプション）
+        if (data.success) {
+            playSuccessSound();
+        } else {
+            playErrorSound();
+        }
+    }
+    
+    // 手動入力フォーム
+    document.getElementById('manual-entry-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const ticketNumber = ticketNumberInput.value.trim();
+        if (ticketNumber) {
+            verifyTicket(ticketNumber);
+            ticketNumberInput.value = '';
+        }
+    });
+    
+    // 音声フィードバック（簡易版）
+    function playSuccessSound() {
+        // ブラウザのビープ音（オプション）
+    }
+    
+    function playErrorSound() {
+        // ブラウザのビープ音（オプション）
+    }
+    
+    // ページ離脱時にカメラ停止
+    window.addEventListener('beforeunload', () => {
+        html5QrCode.stop();
+    });
+});
+</script>
+{% endblock %}

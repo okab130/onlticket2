@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}購入履歴 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <!-- サイドバー -->
+        <div class="list-group">
+            <a href="{% url 'members:profile' %}" class="list-group-item list-group-item-action">プロフィール</a>
+            <a href="{% url 'members:purchase_history' %}" class="list-group-item list-group-item-action active">購入履歴</a>
+            <a href="{% url 'tickets:my_tickets' %}" class="list-group-item list-group-item-action">マイチケット</a>
+            <a href="{% url 'members:password_change' %}" class="list-group-item list-group-item-action">パスワード変更</a>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">購入履歴</h4>
+            </div>
+            <div class="card-body">
+                {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>注文日</th>
+                                    <th>イベント名</th>
+                                    <th>枚数</th>
+                                    <th>合計金額</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
+                                    <td>{{ order.event.name }}</td>
+                                    <td>{{ order.tickets.count }}枚</td>
+                                    <td>¥{{ order.total_amount|floatformat:0 }}</td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning">決済待ち</span>
+                                        {% elif order.status == 'completed' %}
+                                            <span class="badge bg-success">完了</span>
+                                        {% elif order.status == 'cancelled' %}
+                                            <span class="badge bg-danger">キャンセル</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'tickets:my_tickets' %}" class="btn btn-sm btn-primary">チケット表示</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">購入履歴はありません。</p>
+                    <a href="{% url 'events:public_event_list' %}" class="btn btn-primary">イベントを探す</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

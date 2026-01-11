@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}キャンセル申請詳細 - TicketPro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'organizers:cancellation_list' %}">キャンセル申請一覧</a></li>
+            <li class="breadcrumb-item active">詳細</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-file-text"></i> キャンセル申請詳細</h4>
+                </div>
+                <div class="card-body">
+                    <h5>申請情報</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>申請日時</th>
+                            <td>{{ cancellation.requested_at|date:"Y年m月d日 H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>注文番号</th>
+                            <td>{{ cancellation.order.order_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>イベント名</th>
+                            <td>{{ cancellation.order.event.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>購入者</th>
+                            <td>{{ cancellation.order.user.get_full_name }} ({{ cancellation.order.user.email }})</td>
+                        </tr>
+                        <tr>
+                            <th>返金額</th>
+                            <td>¥{{ cancellation.refund_amount|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <th>キャンセル理由</th>
+                            <td style="white-space: pre-wrap;">{{ cancellation.reason }}</td>
+                        </tr>
+                    </table>
+
+                    <hr>
+
+                    {% if cancellation.status == 'requested' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'organizers:cancellation_list' %}" class="btn btn-secondary">戻る</a>
+                                <div>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger me-2">却下</button>
+                                    <button type="submit" name="action" value="approve" class="btn btn-success">承認</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">このキャンセル申請は既に処理済みです。</p>
+                        </div>
+                        <a href="{% url 'organizers:cancellation_list' %}" class="btn btn-secondary">戻る</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

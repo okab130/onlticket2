@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}入場状況 - リアルタイム表示{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    .gate-badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    .entry-row {
+        animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="bi bi-graph-up"></i> 入場状況 - リアルタイム
+        </h1>
+        <a href="{% url 'entries:qr_scan' %}" class="btn btn-primary">
+            <i class="bi bi-qr-code-scan"></i> スキャン画面に戻る
+        </a>
+    </div>
+
+    <!-- 統計情報カード -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">総入場者数</h5>
+                    <div class="stat-number">{{ stats.total_entries }}</div>
+                    <p class="text-muted mb-0">名</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">本日の入場者数</h5>
+                    <div class="stat-number text-success">{{ stats.today_entries }}</div>
+                    <p class="text-muted mb-0">名</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">入場率</h5>
+                    <div class="stat-number text-info">
+                        {% if stats.total_entries > 0 %}
+                            {% widthratio stats.today_entries stats.total_entries 100 %}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <p class="text-muted mb-0">%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲート別統計 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-door-open"></i> ゲート別入場者数</h5>
+        </div>
+        <div class="card-body">
+            {% if stats.gate_stats %}
+                <div class="row">
+                    {% for gate, count in stats.gate_stats.items %}
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center">
+                                <span class="badge gate-badge bg-info">{{ gate }}</span>
+                                <h3 class="mt-2 mb-0">{{ count }}名</h3>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">まだ入場記録がありません</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 最近の入場記録 -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> 最近の入場記録（最新20件）</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_entries %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>入場時刻</th>
+                                <th>チケット番号</th>
+                                <th>イベント</th>
+                                <th>座席</th>
+                                <th>ゲート</th>
+                                <th>スキャンスタッフ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in recent_entries %}
+                                <tr class="entry-row">
+                                    <td>{{ entry.entered_at|date:"Y/m/d H:i:s" }}</td>
+                                    <td>
+                                        <code>{{ entry.ticket.ticket_number }}</code>
+                                    </td>
+                                    <td>{{ entry.ticket.order.event.name }}</td>
+                                    <td>
+                                        {% if entry.ticket.seat %}
+                                            {{ entry.ticket.seat.block }} 
+                                            {{ entry.ticket.seat.row }}列 
+                                            {{ entry.ticket.seat.number }}番
+                                        {% else %}
+                                            自由席
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ entry.gate }}</span>
+                                    </td>
+                                    <td>
+                                        {% if entry.scanned_by %}
+                                            {{ entry.scanned_by.get_full_name|default:entry.scanned_by.username }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">まだ入場記録がありません</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 自動更新オプション -->
+    <div class="mt-4 text-center">
+        <button id="refresh-btn" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-clockwise"></i> 手動更新
+        </button>
+        <div class="form-check form-switch d-inline-block ms-3">
+            <input class="form-check-input" type="checkbox" id="auto-refresh-switch">
+            <label class="form-check-label" for="auto-refresh-switch">
+                自動更新（30秒）
+            </label>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let autoRefreshInterval = null;
+    const refreshBtn = document.getElementById('refresh-btn');
+    const autoRefreshSwitch = document.getElementById('auto-refresh-switch');
+    
+    // 手動更新
+    refreshBtn.addEventListener('click', function() {
+        location.reload();
+    });
+    
+    // 自動更新トグル
+    autoRefreshSwitch.addEventListener('change', function() {
+        if (this.checked) {
+            autoRefreshInterval = setInterval(() => {
+                location.reload();
+            }, 30000); // 30秒ごと
+            console.log('自動更新を開始しました');
+        } else {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                console.log('自動更新を停止しました');
+            }
+        }
+    });
+    
+    // ページ離脱時にクリア
+    window.addEventListener('beforeunload', () => {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+    });
+});
+</script>
+{% endblock %}

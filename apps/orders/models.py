@@ -42,7 +42,16 @@ class CartItem(models.Model):
     seat = models.ForeignKey(
         Seat,
         on_delete=models.CASCADE,
-        related_name='cart_items'
+        related_name='cart_items',
+        null=True,
+        blank=True
+    )
+    ticket_type = models.ForeignKey(
+        'events.TicketType',
+        on_delete=models.CASCADE,
+        related_name='cart_items',
+        null=True,
+        blank=True
     )
     added_at = models.DateTimeField(auto_now_add=True)
     
@@ -94,14 +103,14 @@ class Payment(models.Model):
         ('convenience_store', 'コンビニ決済'),
         ('bank_transfer', '銀行振込'),
     ]
-    
+
     STATUS_CHOICES = [
         ('pending', '未払い'),
         ('completed', '完了'),
         ('failed', '失敗'),
         ('refunded', '返金済み'),
     ]
-    
+
     order = models.OneToOneField(
         Order,
         on_delete=models.CASCADE,
@@ -113,11 +122,47 @@ class Payment(models.Model):
     transaction_id = models.CharField(max_length=100, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         db_table = 'payments'
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"Payment #{self.id} - {self.order.order_number}"
+
+
+class Cancellation(models.Model):
+    """キャンセルモデル"""
+    STATUS_CHOICES = [
+        ('requested', '申請中'),
+        ('approved', '承認済み'),
+        ('rejected', '却下'),
+        ('processed', '処理完了'),
+    ]
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='cancellation'
+    )
+    reason = models.TextField('キャンセル理由')
+    refund_amount = models.DecimalField('返金額', max_digits=10, decimal_places=2)
+    status = models.CharField('ステータス', max_length=20, choices=STATUS_CHOICES, default='requested')
+    requested_at = models.DateTimeField('申請日時', auto_now_add=True)
+    processed_at = models.DateTimeField('処理日時', null=True, blank=True)
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_cancellations',
+        verbose_name='処理者'
+    )
+
+    class Meta:
+        db_table = 'cancellations'
+        ordering = ['-requested_at']
+
+    def __str__(self):
+        return f"Cancellation #{self.id} - Order {self.order.order_number}"
 

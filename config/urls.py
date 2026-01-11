@@ -28,8 +28,8 @@ urlpatterns = [
     path('orders/', include('apps.orders.urls')),
     path('tickets/', include('apps.tickets.urls')),
     path('entries/', include('apps.entries.urls')),
-    # path('members/', include('apps.members.urls')),  # TODO: Create members/urls.py
-    # path('organizers/', include('apps.organizers.urls')),  # TODO: Create organizers/urls.py
+    path('members/', include('apps.members.urls')),
+    path('organizers/', include('apps.organizers.urls')),
 ]
 
 # Media files (development only)

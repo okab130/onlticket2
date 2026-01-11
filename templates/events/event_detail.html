@@ -69,7 +69,19 @@
                             販売期間: {{ ticket_type.sale_start|date:"m/d H:i" }} ～ {{ ticket_type.sale_end|date:"m/d H:i" }}
                         </p>
                         {% if ticket_type.remaining_quantity > 0 %}
-                        <a href="{% url 'seats:seat_selection' event.pk ticket_type.pk %}" class="btn btn-primary w-100">座席を選ぶ</a>
+                            {% if ticket_type.type == 'reserved' %}
+                                <a href="{% url 'seats:seat_selection' event.pk ticket_type.pk %}" class="btn btn-primary w-100">座席を選ぶ</a>
+                            {% elif ticket_type.type == 'free' %}
+                                <form method="post" action="{% url 'orders:add_to_cart_free' %}" class="free-seating-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="ticket_type_id" value="{{ ticket_type.pk }}">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">枚数</span>
+                                        <input type="number" name="quantity" class="form-control" min="1" max="{{ ticket_type.remaining_quantity }}" value="1" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">カートに追加</button>
+                                </form>
+                            {% endif %}
                         {% else %}
                         <button class="btn btn-secondary w-100" disabled>売り切れ</button>
                         {% endif %}

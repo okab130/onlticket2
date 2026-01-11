@@ -23,13 +23,18 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/events/">イベント</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'events:public_event_list' %}">イベント</a></li>
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="/mypage/">マイページ</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/logout/">ログアウト</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'members:profile' %}">マイページ</a></li>
+                        <li class="nav-item">
+                            <form method="post" action="{% url 'members:logout' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link btn btn-link" style="text-decoration: none; color: inherit;">ログアウト</button>
+                            </form>
+                        </li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/login/">ログイン</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/register/">会員登録</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'members:login' %}">ログイン</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'members:register' %}">会員登録</a></li>
                     {% endif %}
                 </ul>
             </div>
